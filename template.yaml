@@ -1,0 +1,14 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: An AWS Serverless Specification template describing your function.
+Resources:
+  SanitizeCloudWatchNotif:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: SanitizeCloudWatchNotif/lambda_function.send_to_sns
+      Runtime: python3.6
+      Description: ''
+      MemorySize: 128
+      Timeout: 15
+      Role: 'arn:aws:iam::363003170430:role/CodeStar-cloud-ops-node--Execution'
+      CodeUri: .debug/
