@@ -10,6 +10,7 @@ class ObfuscationPattern(enum.Enum):
     MIDDLE = 3
     ALL = 4
 
+
 class Event():
     '''
     Parses an event JSON and provides convenience methods to access and
@@ -22,8 +23,10 @@ class Event():
     def factory(type, payload):
         type = type.lower()
         
-        if type == "cloudwatch":
+        if type == "cw_event":
             return CloudWatchEvent(payload)
+        if type == "cw_alarm":
+            return CloudWatchAlarm(payload)
 
     def __init__(self, payload):
         '''
@@ -32,23 +35,25 @@ class Event():
         Raises a JSONDecodeError if the JSON is malformed and cannot be decoded.
         '''
 
-        self.event = self._parse_payload(payload)
+        self.payload = self._parse_payload(payload)
         
     
     def _parse_payload(self, payload):
         '''
         Parses the payload json into an object and logs any anomalies
         '''
-        event = json.loads(payload)
+        parsed_payload = json.loads(payload)
         logger.debug('Parsed event payload successfully')
         
-        for attribute in expected_attr:
-            if not hasattr(event, attribute):
+        for attribute in self.expected_attr:
+            if not hasattr(payload, attribute):
                 logger.warning(f'Event is missing {attribute}')
 
-        return event
+        return parsed_payload
         
-    def get_obfuscated_attr(self, attribute, num_clear_chars=2, pattern=ObfuscationPattern.MIDDLE, hidden_char='*'):
+    def get_obfuscated_attr(self, attribute, num_clear_chars=2, \
+                            pattern=ObfuscationPattern.MIDDLE, \
+                            hidden_char='*'):
         '''
         Returns an obfuscated string of the event attribute requested leaving 
         a number of unobfuscated characters.
@@ -70,7 +75,7 @@ class Event():
         :param pattern: Determine whether the begining, end, middle, or all characters are obfuscated
         :type ObfuscationPattern:
         '''
-        attr_val = getattr(self.event, attribute)
+        attr_val = getattr(self.payload, attribute)
         attr_val_len = len(attr_val)
         
         char_num = 0
@@ -100,7 +105,7 @@ class Event():
 
         :returns: A string or list of the attribute requested
         '''
-        return getattr(self.event, attribute)
+        return getattr(self.payload, attribute)
 
 
 class CloudWatchEvent(Event):
@@ -110,11 +115,25 @@ class CloudWatchEvent(Event):
     
     expected_attr = ['account', 'region', 'time', 'id', 'resources']
 
-    def __init__(self, payload
+    def __init__(self, payload):
         '''
         Initialize an CloudWatchEvent object
     
         Raises a JSONDecodeError if the JSON is malformed and cannot be decoded.
         '''
         super().__init__(payload)
-        
+
+class CloudWatchAlarm(Event):
+    '''
+    Parses a Cloud Watch alarm payload and provides convenience methods
+    '''
+    
+    expected_attr = ['account', 'region', 'time', 'id', 'resources']
+
+    def __init__(self, payload):
+        '''
+        Initialize an CloudWatchAlarm object
+    
+        Raises a JSONDecodeError if the JSON is malformed and cannot be decoded.
+        '''
+        super().__init__(payload)
